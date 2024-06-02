@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Matching Jobs</title>
+</head>
+
+<body>
+    <h1>Matching Jobs</h1>
+    <div id="matching_jobs"></div>
+    <button onclick="fetchMatchingJobs()">Show Matching Jobs</button>
+
+    <script>
+        function fetchMatchingJobs() {
+            fetch('/api/prediction', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const matchingJobsDiv = document.getElementById('matching_jobs');
+                    matchingJobsDiv.innerHTML = ''; // Clear previous results
+
+                    if (data.matching_jobs && data.matching_jobs.length > 0) {
+                        data.matching_jobs.forEach(job => {
+                            const jobDiv = document.createElement('div');
+                            jobDiv.innerHTML = `
+                            <h3>${job.Role}</h3>
+                            <p>Company: ${job.Company}</p>
+                            <p>URL: <a href="${job.URL}" target="_blank">${job.URL}</a></p>
+                            <hr>
+                        `;
+                            matchingJobsDiv.appendChild(jobDiv);
+                        });
+                    } else {
+                        matchingJobsDiv.innerHTML = '<p>No matching jobs found.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching matching jobs:', error);
+                    const matchingJobsDiv = document.getElementById('matching_jobs');
+                    matchingJobsDiv.innerHTML = '<p>Error fetching matching jobs. Please try again later.</p>';
+                });
+        }
+    </script>
+</body>
+
+</html>

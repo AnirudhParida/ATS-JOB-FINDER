@@ -1,10 +1,11 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, session
 from dotenv import load_dotenv
 import os
 import io
 import google.generativeai as genai
 import fitz
 from docx import Document
+from job_matching_model import job_matching_model
 
 
 load_dotenv()
@@ -15,6 +16,7 @@ model = genai.GenerativeModel('gemini-pro')
 
 
 app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY")
 
 #extract text from pdf
 def extract_text_from_pdf(pdf_file_stream):
@@ -43,6 +45,7 @@ def upload_form():
 
 @app.route('/api/resume', methods=['POST'])
 def resume():
+    
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
 
@@ -60,12 +63,21 @@ def resume():
                 text = extract_text_from_docx(file_stream)
 
             response = extract_skills_section(text)
-            return jsonify({"response": response.strip().split('\n')})
+            session['skill_list'] = response.strip().split("\n")
+            return jsonify({"response": response})
         except Exception as e:
             return jsonify({"error": str(e)}), 500
     else:
         return jsonify({"error": "Unsupported file format"}), 400
 
+
+@app.route('/api/prediction', methods=['POST'])
+def prediction():
+    if 'skill_list' not in session:
+        return jsonify({"error": "No skill list found"}), 400
+    skill_list = session['skill_list']
+    matches = job_matching_model()
+    return render_template('matching_job.html', matches=matches)
 
 @app.route('/api', methods=['GET'])
 def get():
